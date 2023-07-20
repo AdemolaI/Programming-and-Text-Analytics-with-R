@@ -1,7 +1,5 @@
 ---
-title: "MA331-Report: 2213553"
-subtitle: "TED Talks by Speaker Laurie Garrett and Speaker Ted Halstead"
-author: "Ibitayo, Ademola"
+title: "Sentiment Analysis of TED Talks by Speaker Laurie Garrett and Speaker Ted Halstead"
 output: html_document
 ---
 
