@@ -1,0 +1,296 @@
+---
+title: "MA331-Report: 2213553"
+subtitle: "TED Talks by Speaker Laurie Garrett and Speaker Ted Halstead"
+author: "Ibitayo, Ademola"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+### Don't delete this setup code chunk from your file
+knitr::opts_chunk$set(echo = FALSE, message = NULL, warning = FALSE, comment = NULL)   ## DON'T ALTER THIS: this is to prevent printing the code or any unnecessary addition in your final "html" report file.
+
+# You can extend this list below to load all the packages required for your analyses:
+#====================================================================================
+library(dsEssex)
+library(tidyverse)
+library(tidytext)
+library(ggplot2)
+library(ggrepel)
+# load the 'ted_talks' data
+#=========================
+data(ted_talks)
+load(file = "ted_talks.rda")
+```
+
+<span style="color: red;"></span>
+
+<style>
+body {
+  text-align: justify;
+}
+</style>
+
+## Introduction
+
+The aim of this project is to extract specific speakers' Ted talk data from the provided Ted talk data and analyse the data to see the words used by the speakers, the words' sentiments and observe patterns for useful insights. 
+
+The Ted talk topics and speakers considered in this report include Lessons from the 1918 flu by Laurie Garrett (TED2007) and A climate solution where all sides can win by Ted Halstead (TED2017).
+
+Laurie Garrett's talk was on pandemic threats and the level of preparations that should be made towards them. She focused on the Avian Influenza H5N1 which first emerged in Guangdong, China, 1997. She discussed the level of severity and leveraged this to recommend ways to prepare which include:
+1. Research on masks, hygiene, Tamiflu and home isolation.
+2. Pressure local political leaders to provide better plans
+3. Pressure national leaders.
+
+Ted Halstead's talk was on a climate solution through a killer app to climate policies. He spoke about how the climate killer app helps to overcome psychological, geopolitical and partisan barriers to climate progress. He co-authored The Conservative Case For Carbon dividends. He mentioned the four pillars of a carbon dividends plan which include:
+1. Gradually rising carbon tax.
+2. Carbon dividend for all.
+3. Regulatory rollback.
+4. The climate domino effect.
+
+
+
+## Methods
+
+1. The packages needed for the analysis were loaded and they include (`dsEssex`, `tidyverse`, `tidytext`, `ggplot`, `ggrepel`).
+
+2. The Ted talk data was loaded from the given MA331-Report template.
+An overview of the ted_talk data frame structure was gotten using ` glimpse()`.
+
+3. The data for the two speakers to be considered were extracted from the ted_talk data using `filter()` and the data frame summary was viewed.
+
+4. The text data for the two speakers were tidied and tokenized using `unnest_tokens()`. Stopwords were removed using `get_stopwords()` passed into `anti_join()` and the new data frame summary was viewed.
+
+5. The words for each speakers were extracted into separate data objects for analysis using `filter()` and the frequency of each speaker's words was computed and sorted in descending order using `count()`.
+
+6. The top 25 words from each speaker data were visualized separately using `slice_max()` to get top words and `ggplot()`+`geom_col()`to view them based on the categorical variable m_word defined by `mutate()`.
+
+7. A new date frame was created by binding the different speakers data using `bind_row()` and the words from both speakers were visualized and compared on a plot.
+
+8. The sentiment data of the speakers' words were obtained using `get_sentiment()` with the `nrc` lexicon and stored in a data frame.
+
+9. The odds ratio (`OR`) of the sentiments were computed using `compute_OR()`. The logarithm of the odd ratios (`log_OR`) were computed using `log()` and the sentiments were ordered according to their corresponding log_OR values using `reorder()`.
+
+10. A bar chart was plotted for the `log_OR` of the sentiments with color-filled bars to differentiate between negative and positive log_OR values using `coord_flip()` and `scale_fill_manual()`.
+
+
+
+## Results
+
+```{r include=FALSE}
+# to view some rows and columns of ted_talks
+glimpse(ted_talks)
+```
+
+
+```{r include=FALSE}
+# Filtering for two speakers: Laurie Garrett and Ted Halstead
+my_speakers_Data <- ted_talks%>%
+  filter(speaker %in% c("Laurie Garrett", "Ted Halstead"))
+
+# to get an overview of the my_speakers_Data
+glimpse(my_speakers_Data)
+```
+
+
+```{r include=FALSE}
+# to break the speakers' text into single words
+tidy_speakers_talk <- my_speakers_Data%>%
+  unnest_tokens(word, text)%>%   # to tokenize text
+  anti_join(get_stopwords())    # to remove stopwords
+
+head(tidy_speakers_talk)      # to view top rows of the data frame
+```
+
+
+```{r include=FALSE}
+# to extract the words for Laurie Garrett
+laurie_Garrett_words <- tidy_speakers_talk %>%
+  filter(speaker == "Laurie Garrett") %>%
+  # compute the frequency of words by speaker
+  count(speaker, word, sort = TRUE)
+
+# preview top rows of the data
+head(laurie_Garrett_words)
+```
+
+
+```{r include=FALSE}
+# to extract the words for Ted Halstead
+ted_Halstead_words <- tidy_speakers_talk%>%
+  filter(speaker == "Ted Halstead")%>%
+  # compute the frequency of words by speaker
+  count(speaker, word, sort = TRUE)
+
+# preview top rows of the data
+head(ted_Halstead_words)
+```
+
+
+
+`Plot 1` Top words from Laurie Garrett
+
+
+```{r echo=FALSE}
+# to visualize top words from Laurie Garrett
+laurie_Garrett_words%>%
+  # select top 25 words
+  slice_max(n, n=25)%>%       
+  # create new column of ordered words based on frequencies
+  mutate(m_word = reorder(word,n))%>%  
+  # to plot the ordered words based on their frequencies
+  ggplot(aes(x=n, y=m_word)) + geom_col() + 
+  xlab("Frequency of words") +
+  ylab("Top words") + ggtitle("Top words from Laurie Garrett.")
+```
+
+
+The `plot 1` below shows the top words used by Laurie Garrett.
+The most commonly used words based on their frequencies are flu, people and virus.
+
+
+\newpage
+
+`Plot 2` Top words from Ted Halstead
+
+
+```{r echo=FALSE}
+# to visualize top words from Ted Halstead
+ted_Halstead_words%>%
+  # select top 25 words
+  slice_max(n, n=25)%>%   
+  # create new column of ordered words based on frequencies
+  mutate(m_words = reorder(word,n))%>%   
+  # to plot the ordered words based on their frequencies
+  ggplot(aes(x=n, y=m_words)) + geom_col() +
+  xlab("Frequency of words") +
+  ylab("Top words") + ggtitle("Top words from Ted Halstead.")
+```
+
+
+The `plot 2` above shows the top words used by Ted Halstead.
+The most commonly used words based on their frequencies are climate, carbon, and country
+
+
+```{r include=FALSE}
+# bind both speakers' words by rows
+laurie_and_ted_words <- bind_rows(laurie_Garrett_words, ted_Halstead_words)   
+# to view top rows of the data frame
+head(laurie_and_ted_words)  
+# to get an overview of the data frame
+glimpse(laurie_and_ted_words) 
+```
+
+
+```{r include=FALSE}
+# to group and compare words from both speakers
+speaker_words_compared <- laurie_and_ted_words%>%
+  # to group the data by words
+  group_by(word)%>%     
+  # to select words across speakers with total frequencies greater than 6
+  filter(sum(n)>6)%>%
+  # to ungroup the grouped data
+  ungroup()%>%  
+  # to separate the speakers into different columns
+  pivot_wider(names_from = "speaker", values_from = "n", values_fill = 0) 
+
+head(speaker_words_compared)
+```
+
+
+\newpage
+
+`Plot 3` The top words from both Ted Halstead and Laurie Garrett
+
+
+```{r echo=FALSE}
+# to visualize and compare words from both speakers
+laurie_and_ted_words%>%
+  # to group the data by words
+  group_by(word)%>%
+ # to select words across speakers with total frequencies greater than 10
+  filter(sum(n)>10)%>%            
+  # to ungroup the grouped data
+  ungroup()%>%   
+  # to separate the speakers into different columns to the names on the axes
+  pivot_wider(names_from = "speaker", values_from = "n", values_fill = 0)%>% 
+  # to plot the words from both speakers
+  ggplot(aes(`Laurie Garrett`, `Ted Halstead`)) +  
+  # to draw a line with slope = 1
+  geom_abline(color = "black", size = 1.2, alpha = 0.75, lty = 3)+ 
+  # to prevent overlapping text and position words well for visualization
+  geom_text_repel(aes(label = word), max.overlaps = 15) + 
+  # to fix the aspect ratio of the plot
+  coord_fixed() +
+  ggtitle("Words used by both Ted Halstead and Laurie Garrett")
+```
+
+
+The `plot 3` above shows some of the top words used by both speakers.
+There is a wide difference with the main words used by each speakers given that they spoke on different topics.
+The keywords are peculiar to the topics under which they are used. The climate 
+It is also observed that few words slightly shared based on the distance to the line. They include time, plan, people, human which are more generic words across industries.
+
+
+## Sentiment Analysis
+
+Sentiment values are assigned to speakers' words based on their emotional content. The National Research Council (NRC) lexicon are used to generate the sentiment values for the speakers' words.
+
+
+`Table 1` Sentiments occurrence for each speakers.
+
+
+```{r echo=FALSE}
+# to get word sentiments
+my_speakers_sentiment <- laurie_and_ted_words%>%
+  # join the words data with the NRC sentiment lexicon
+  inner_join(get_sentiments("nrc"), by = "word")%>%
+  # compute frequency based on speaker and sentiment
+  count(speaker, sentiment)%>%
+  # separate sentiment counts for each speaker on different columns
+  pivot_wider(names_from = "speaker", values_from = "n", values_fill = 0)%>%
+  # create column for sentiment odds ratio (OR). Compute OR and log_OR
+  mutate(OR = compute_OR(`Laurie Garrett`,
+                         `Ted Halstead`, correction = FALSE),
+         log_OR = log(OR),
+         sentiment = reorder(sentiment, log_OR))
+
+my_speakers_sentiment
+```
+
+
+The `Table 1` above shows the sentiments occurrence for each speakers and the corresponding odds ratio and logarithm of odds ratio.
+Given that the total number of words vary for each speaker, the log OR is computed to have a basis for comparing the sentiments for the speakers.
+
+
+`Plot 4` The words' sentiments and log odds ratio
+
+
+```{r echo=FALSE}
+# to visualize the logarithm of odds ratio of the sentiments
+laurie_and_ted_words%>%
+  # join the words data with the NRC sentiment lexicon
+  inner_join(get_sentiments("nrc"), by = "word")%>%
+  # compute frequency based on speaker and sentiment
+  count(speaker, sentiment)%>%
+  # separate sentiment counts for each speaker on different columns
+  pivot_wider(names_from = "speaker", values_from = "n", values_fill = 0)%>%
+  # create column for sentiment odds ratio (OR). Compute OR and log_OR
+  mutate(OR = compute_OR(`Laurie Garrett`,
+                         `Ted Halstead`, correction = FALSE),
+         log_OR = log(OR),
+         sentiment = reorder(sentiment, log_OR))%>%
+  # plot bar chart of the log_OR of the sentiments
+  ggplot(aes(sentiment, log_OR, fill = log_OR < 0)) +
+  geom_col(show.legend = FALSE) +
+  ylab("Log odds ratio") + ggtitle("The words' sentiments and log odds ratio") +
+  # flip the coordinates of the plot based on the log_OR values
+  coord_flip() +
+  scale_fill_manual(name="", values = c("darkgreen", "red"))
+```
+
+The `Plot 4` shows the words' sentiments and log odds ratio for the speakers.
+The joy, positive, trust, surprise and anticipation sentiments are found more in second speaker's words (Ted Halstead's transcript) than in the first speaker's words (Laurie Garrett).
+
+The disgust, anger, sadness, negative, and fear sentiments are found more in the first speaker's words (Laurie Garrett's transcript) than in the second speaker's words (Ted Halstead). 
+
+The findings on the sentiments above can be traced back to the two speakers' talks. Ted Halstead's talk was about a solution where everyone wins and this makes it more on the positive side than Laurie Garrett who spoke about a pandemic that could have stirred up urgency and some level of fear for actions to be taken.  
